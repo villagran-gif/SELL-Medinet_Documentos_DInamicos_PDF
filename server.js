@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const { google } = require('googleapis');
+const { Readable } = require('stream');
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -271,7 +272,7 @@ app.post('/v1/render', requireApiKey, async (req, res) => {
       },
     });
 
-    const exportedPdf = await drive.files.export(
+    const pdfBin = await drive.files.export(
       {
         fileId: copiedDocId,
         mimeType: 'application/pdf',
@@ -280,6 +281,8 @@ app.post('/v1/render', requireApiKey, async (req, res) => {
         responseType: 'arraybuffer',
       }
     );
+
+    const pdfBuffer = Buffer.isBuffer(pdfBin.data) ? pdfBin.data : Buffer.from(pdfBin.data);
 
     const pdfName = buildPdfFileName(template.output_filename_pattern, payload);
     const createdPdf = await drive.files.create({
@@ -290,7 +293,7 @@ app.post('/v1/render', requireApiKey, async (req, res) => {
       },
       media: {
         mimeType: 'application/pdf',
-        body: Buffer.from(exportedPdf.data),
+        body: Readable.from(pdfBuffer),
       },
       fields: 'id,name,webViewLink',
     });
