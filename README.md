@@ -238,3 +238,13 @@ curl -X POST http://localhost:3000/v1/render \
     "actor":{"email":"agente@tuempresa.cl"}
   }'
 ```
+
+---
+
+## Shared Drive troubleshooting
+
+Si el template o la carpeta destino están en un **Shared Drive**:
+
+- Asegura que la Service Account tenga acceso al archivo template y a la carpeta destino.
+- Recomendado: agregar la Service Account como miembro del Shared Drive.
+- Este servicio ya incluye soporte explícito para Shared Drives en operaciones de Drive (`copy`, `create`, `delete`) usando `supportsAllDrives: true`.

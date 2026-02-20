@@ -245,6 +245,7 @@ app.post('/v1/render', requireApiKey, async (req, res) => {
 
     const folderId = payload?.deal?.folder_id || payload.folder_id;
     const copyResponse = await drive.files.copy({
+      supportsAllDrives: true,
       fileId: template.doc_template_id,
       requestBody: {
         name: `tmp_${Date.now()}_${template.template_key}`,
@@ -282,6 +283,7 @@ app.post('/v1/render', requireApiKey, async (req, res) => {
 
     const pdfName = buildPdfFileName(template.output_filename_pattern, payload);
     const createdPdf = await drive.files.create({
+      supportsAllDrives: true,
       requestBody: {
         name: pdfName,
         ...(folderId ? { parents: [folderId] } : {}),
@@ -294,7 +296,7 @@ app.post('/v1/render', requireApiKey, async (req, res) => {
     });
 
     if (!template.keep_intermediate_doc && copiedDocId) {
-      await drive.files.delete({ fileId: copiedDocId });
+      await drive.files.delete({ fileId: copiedDocId, supportsAllDrives: true });
       copiedDocId = null;
     }
 
@@ -313,7 +315,7 @@ app.post('/v1/render', requireApiKey, async (req, res) => {
   } catch (error) {
     if (copiedDocId) {
       try {
-        await drive.files.delete({ fileId: copiedDocId });
+        await drive.files.delete({ fileId: copiedDocId, supportsAllDrives: true });
       } catch (_cleanupErr) {
         // noop
       }
