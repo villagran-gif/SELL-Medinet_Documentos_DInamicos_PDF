@@ -1,3 +1,8 @@
+require('dotenv').config();
+const express = require('express');
+const { google } = require('googleapis');
+const { Readable } = require('stream');
+
 // CORS + Preflight
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -6,10 +11,6 @@ app.use((req, res, next) => {
   if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
-require('dotenv').config();
-const express = require('express');
-const { google } = require('googleapis');
-const { Readable } = require('stream');
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
