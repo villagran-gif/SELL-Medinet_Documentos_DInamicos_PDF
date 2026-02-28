@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Portal · Sell</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" />
+      <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="topbar">
+        <div>
+          <h1>Portal · Sell</h1>
+          <p class="muted">DEV · box-ai-clinyco</p>
+        </div>
+        <span class="badge">DEV</span>
+      </header>
+
+      <section class="card">
+        <h2>IA BOX</h2>
+        <p class="muted">
+          Pega información en cualquier formato. El sistema limpia <span class="mono">*</span>, <span class="mono">=</span> y <span class="mono">:</span>,
+          y trata de reconocer los datos para <b>vista previa</b> / <b>crear contacto</b>.
+        </p>
+
+        <label>
+          Texto pegado
+          <textarea id="iaText" rows="8" placeholder="Pega aquí (WhatsApp, email, ficha, etc.)"></textarea>
+        </label>
+
+        <div class="row">
+          <button id="btnExtract" type="button">Extraer a campos</button>
+          <button id="btnClear" type="button" class="secondary">Limpiar</button>
+          <label class="chk">
+            <input id="techMode" type="checkbox" />
+            <span>Modo técnico</span>
+          </label>
+        </div>
+
+        <div class="rules">
+          <div class="rule bad"><span class="emoji">❌</span><span><b>No</b> pueden existir <b>2+</b> contactos con el mismo RUT (normalizado).</span></div>
+          <div class="rule ok"><span class="emoji">✅</span><span>Puede haber deals con el mismo RUT en distintos pipelines.</span></div>
+          <div class="rule bad"><span class="emoji">❌</span><span><b>No</b> puede haber <b>2+</b> deals con el mismo RUT dentro del mismo pipeline.</span></div>
+        </div>
+
+        <form id="contactForm" class="form-grid">
+          <label>
+            RUN / RUT <span class="req">*</span>
+            <input id="c_rut" placeholder='Ej: 12.345.678-K' autocomplete="off" />
+          </label>
+
+          <label>
+            Nombres <span class="req">*</span>
+            <input id="c_nombres" placeholder="Ej: Juan" />
+          </label>
+
+          <label>
+            Apellidos <span class="req">*</span>
+            <input id="c_apellidos" placeholder="Ej: Pérez Soto" />
+          </label>
+
+          <label>
+            Fecha de Nacimiento <span class="req">*</span>
+            <input id="c_fecha" placeholder="DD/MM/YYYY" />
+          </label>
+
+          <label>
+            Teléfono 1 <span class="req">*</span>
+            <input id="c_tel1" placeholder="+569..." />
+          </label>
+
+          <label>
+            Teléfono 2
+            <input id="c_tel2" placeholder="Si no existe, se copiará automático el Teléfono 1" />
+          </label>
+
+          <label>
+            Correo electrónico <span class="req">*</span>
+            <input id="c_email" placeholder="correo@ejemplo.com" />
+          </label>
+
+          <label>
+            Aseguradora / Previsión <span class="req">*</span>
+            <select id="c_aseguradora">
+              <option value="">Selecciona…</option>
+            </select>
+          </label>
+
+          <label>
+            Tramo/Modalidad <span class="req">*</span>
+            <select id="c_modalidad">
+              <option value="">Selecciona…</option>
+            </select>
+            <small class="hint">Ej, Colmena, Tramo B, Tramo C</small>
+          </label>
+
+          <label class="span2">
+            Dirección <span class="req">*</span>
+            <input id="c_direccion" placeholder="Ej: Av. Siempre Viva 123" />
+          </label>
+
+          <label>
+            Comuna
+            <select id="c_comuna">
+              <option value="">Selecciona…</option>
+            </select>
+          </label>
+
+          <div class="row span2">
+            <button id="btnPreview" type="button">Vista previa</button>
+            <button id="btnCreate" type="button" class="danger">Crear contacto</button>
+            <span class="muted small">En DEV, crear puede estar bloqueado por <span class="mono">ALLOW_WRITE</span>.</span>
+          </div>
+        </form>
+
+        <section id="c_status" class="status"></section>
+        <div id="c_summary" class="summary"></div>
+        <details id="c_details" class="details">
+          <summary>Ver detalle técnico (JSON)</summary>
+          <pre id="c_out" class="out"></pre>
+        </details>
+
+        <p class="muted small">/api/create-contact · soporta <span class="mono">?dry_run=1</span></p>
+      </section>
+
+
+      <section class="card">
+        <h2>Crear DEAL / TRATO</h2>
+        <p class="muted">
+          Este bloque <b>crea el DEAL/TRATO</b> en el pipeline seleccionado. 
+          Regla: si ya existe 1 deal con el mismo RUT en el mismo pipeline, se <b>bloquea</b> y se muestran links.
+        </p>
+
+        <form id="dealForm" class="form-grid">
+          <label>
+            Pipeline ID (obligatorio)
+            <select id="dealPipelineId"></select>
+          <div id="dealPipelineHelp" class="muted small"></div>
+
+<label>
+  Dueño (obligatorio)
+  <select id="dealOwnerId"></select>
+  <div id="dealOwnerHelp" class="muted small"></div>
+</label>
+<div class="row span2"><hr style="border:none;border-top:1px solid #eee;margin:10px 0;"></div>
+
+<label>
+  SUCURSAL (obligatorio)
+  <select id="dealSucursal">
+    <option value="">Selecciona sucursal...</option>
+    <option value="Santiago">Santiago</option>
+    <option value="Antofagasta">Antofagasta</option>
+    <option value="Calama">Calama</option>
+  </select>
+</label>
+
+<label>
+  Peso (kg) (obligatorio)
+  <input id="dealPeso" placeholder="Ej: 70.0" inputmode="decimal" />
+  <div class="muted small">1 decimal, usa punto. Ej: 70.5</div>
+</label>
+
+<label>
+  Estatura (m) (obligatorio)
+  <input id="dealEstatura" placeholder="Ej: 1.75" inputmode="decimal" />
+  <div class="muted small">metros, usa punto. Ej: 1.75</div>
+</label>
+
+<label>
+  Interés
+  <input id="dealInteres" placeholder="Texto libre" />
+</label>
+
+<label>
+  URL-MEDINET (opcional)
+  <input id="dealUrlMedinet" placeholder="https://..." />
+</label>
+
+<label>
+  Cirugías Previas (opcional)
+  <input id="dealCirugiasPrevias" placeholder="Texto libre" />
+</label>
+
+<label>
+  CIRUJANO BARIÁTRICO
+  <select id="dealCirujanoBariatrico">
+    <option value="">(opcional)</option>
+  </select>
+</label>
+
+<label>
+  CIRUJANO PLASTICO
+  <select id="dealCirujanoPlastico">
+    <option value="">(opcional)</option>
+  </select>
+</label>
+
+<label>
+  CIRUJANO DE BALON
+  <select id="dealCirujanoBalon">
+    <option value="">(opcional)</option>
+  </select>
+</label>
+
+<label>
+  Validacion PAD (string)
+  <input id="dealValidacionPad" placeholder="Texto" />
+</label>
+
+<label>
+  Numero familia paciente (string)
+  <input id="dealNumeroFamilia" placeholder="Texto" />
+</label>
+
+<label>
+  Colaborador1
+  <input id="dealColab1" placeholder="Texto" />
+</label>
+<label>
+  Colaborador2
+  <input id="dealColab2" placeholder="Texto" />
+</label>
+<label>
+  Colaborador3
+  <input id="dealColab3" placeholder="Texto" />
+</label>
+
+<div class="row span2">
+  <div class="muted small">Sugerencia: usa <b>Vista previa (dry_run)</b> para ver IMC/Edad/WhatsApp antes de crear.</div>
+</div>
+
+
+          <div class="muted small"><button id="toggleManualPipeline" type="button" class="secondary">Ingresar Pipeline ID manual</button></div>
+          <div id="manualPipelineWrap" style="display:none;margin-top:8px;">
+            <input id="manualPipelineId" placeholder="Pipeline ID (manual) ej: 1290779" inputmode="numeric" />
+          </div>
+          </label>
+          <div class="row span2">
+            <button id="btnDealPreview" type="button" class="secondary">Vista previa (dry_run)</button>
+            <button id="btnDealCreate" type="button">Crear DEAL / TRATO</button>
+          </div>
+          <div class="row span2">
+            <span class="muted small">Se usa el contacto resultante del bloque anterior (crear contacto / contacto existente).</span>
+          </div>
+        </form>
+
+        <section id="d_status" class="status"></section>
+        <div id="d_summary" class="summary"></div>
+        <details id="d_details" class="details">
+          <summary>Ver detalle técnico (JSON)</summary>
+          <pre id="d_out" class="out"></pre>
+        </details>
+
+        <p class="muted small">/api/create-deal · soporta <span class="mono">?dry_run=1</span></p>
+      </section>
+
+
+
+
+      <section class="card">
+        <h2>Buscar en Sell por <span class="mono">RUT_normalizado</span></h2>
+        <p class="muted">
+          La búsqueda se hace usando el <span class="mono">RUT_normalizado</span> (normaliza y valida DV) y muestra deals por pipeline.
+        </p>
+
+        <form id="form" class="form-grid">
+          <label>
+            RUT
+            <input id="rut" placeholder="Ej: 12.345.678-k" autocomplete="off" />
+          </label>
+
+          <label>
+            Pipeline ID (opcional)
+            <input id="pipelineId" placeholder="Ej: 1290779" inputmode="numeric" />
+          </label>
+
+          <div class="row span2">
+            <button type="submit">Buscar</button>
+            <span class="muted small">Tip: puedes pegar un RUT con o sin puntos/guion.</span>
+          </div>
+        </form>
+
+        <section id="status" class="status"></section>
+        <details class="details" open>
+          <summary>Resultado (JSON)</summary>
+          <pre id="out" class="out"></pre>
+        </details>
+
+        <div class="row span2" style="margin-top:10px;">
+          <button id="btnCreateDocs" type="button" disabled>CREAR DOCUMENTOS</button>
+          <label class="chk">
+            <input id="docsDryRun" type="checkbox" />
+            <span>Dry-run</span>
+          </label>
+          <span class="muted small">Genera PDFs desde templates en Drive y los guarda en la carpeta del paciente.</span>
+        </div>
+
+        <details class="details" open id="docsTemplatesWrap" style="margin-top:8px;">
+  <summary>Templates disponibles</summary>
+  <div class="row span2" style="margin:8px 0;">
+    <button id="btnReloadTemplates" type="button">Recargar templates</button>
+    <button id="btnSelectAllTemplates" type="button">Seleccionar todos</button>
+    <button id="btnSelectNoneTemplates" type="button">Ninguno</button>
+    <span class="muted small">Se leen automáticamente desde una carpeta de Drive (TEMPLATE_FOLDER_ID).</span>
+  </div>
+<div class="row span2" style="margin:8px 0;">
+  <input id="docsTemplatesSearch" type="text" placeholder="Buscar plantilla..." />
+  <button id="btnSelectFilteredTemplates" type="button">Seleccionar filtradas</button>
+  <button id="btnDeselectFilteredTemplates" type="button">Desmarcar filtradas</button>
+  <span id="docsTemplatesCount" class="muted small"></span>
+</div>
+
+  <div id="docsTemplates" class="templates-list"></div>
+</details>
+
+<section id="docs_status" class="status"></section>
+        <details class="details">
+          <summary>Resultado documentos (JSON)</summary>
+          <pre id="docs_out" class="out"></pre>
+        </details>
+
+        <footer class="muted small">/health · /api/search-rut</footer>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
