@@ -95,3 +95,33 @@ textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); bor
   font-size: 12px;
   opacity: 0.8;
 }
+
+/* Docs result links */
+.docs-links-head {
+  margin: 6px 0 10px;
+}
+.docs-links-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.docs-links-list li {
+  line-height: 1.25;
+}
+.docs-links .doc-name {
+  font-weight: 600;
+}
+.docs-links .doc-links a {
+  text-decoration: underline;
+}
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  opacity: 0.85;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 999px;
+  padding: 1px 8px;
+  margin-left: 6px;
+}

@@ -713,6 +713,7 @@ const btnCreateDocs = $('btnCreateDocs');
 const docsDryRunEl = $('docsDryRun');
 const docsStatusEl = $('docs_status');
 const docsOutEl = $('docs_out');
+const docsLinksEl = $('docs_links');
 
 // Templates UI
 const docsTemplatesEl = $('docsTemplates');
@@ -760,9 +761,8 @@ function persistSelectedSet() {
 }
 
 function initSelectedSet(defaultSelectedIds = []) {
-  const saved = readSavedTemplateSelection();
-  __selectedTemplateIds = new Set((saved && saved.length) ? saved : (defaultSelectedIds || []));
-  // If nothing selected (first run), select all by default (will be applied after __templatesAll is loaded)
+  // Default: NONE selected. (Safer UX)
+  __selectedTemplateIds = new Set();
 }
 
 function updateTemplatesCount() {
@@ -778,12 +778,6 @@ function updateTemplatesCount() {
 function renderTemplates(list) {
   __templatesFiltered = list || [];
   if (!docsTemplatesEl) return;
-
-  // If first run and still none selected -> select all
-  if (__selectedTemplateIds.size === 0 && __templatesAll.length > 0) {
-    for (const it of __templatesAll) __selectedTemplateIds.add(it.id);
-    persistSelectedSet();
-  }
 
   docsTemplatesEl.innerHTML = __templatesFiltered.map((t) => {
     const checked = __selectedTemplateIds.has(t.id) ? 'checked' : '';
@@ -885,6 +879,31 @@ if (docsTemplatesSearchEl) docsTemplatesSearchEl.addEventListener('input', apply
 // Load templates on page load
 loadTemplates(false);
 
+function renderDocsLinks(json) {
+  if (!docsLinksEl) return;
+  if (!json || !json.ok) {
+    docsLinksEl.innerHTML = '';
+    return;
+  }
+
+  const folderUrl = json.patient_folder_url || json.patient_folder_url || '';
+  const header = folderUrl
+    ? `<div class="docs-links-head"><a href="${escapeHtml(folderUrl)}" target="_blank" rel="noopener">📁 Abrir carpeta del paciente</a></div>`
+    : '';
+
+  const results = Array.isArray(json.results) ? json.results : [];
+  const items = results.map((r) => {
+    const name = escapeHtml(r.doc_name || r.pdf_name || r.doc_type || '');
+    const doc = r.doc_url ? `<a href="${escapeHtml(r.doc_url)}" target="_blank" rel="noopener">DOC</a>` : '';
+    const pdf = r.pdf_url ? `<a href="${escapeHtml(r.pdf_url)}" target="_blank" rel="noopener">PDF</a>` : '';
+    const links = [doc, pdf].filter(Boolean).join(' · ');
+    const status = r.status ? `<span class="tag">${escapeHtml(r.status)}</span>` : '';
+    return `<li><span class="doc-name">${name}</span> ${status} <span class="doc-links">${links}</span></li>`;
+  }).join('');
+
+  docsLinksEl.innerHTML = header + (items ? `<ul class="docs-links-list">${items}</ul>` : '<div class="muted small">Sin resultados</div>');
+}
+
 function setStatus(el, msg, kind = 'info') {
   el.textContent = msg || '';
   el.className = `status ${kind}`;
@@ -933,6 +952,7 @@ btnCreateDocs.addEventListener('click', async () => {
   const dry = !!docsDryRunEl.checked;
   setStatus(docsStatusEl, dry ? 'Preparando (dry-run)...' : 'Generando documentos...', 'info');
   docsOutEl.textContent = '';
+  if (docsLinksEl) docsLinksEl.innerHTML = '';
 
   try {
     const url = dry ? '/api/docs/generate-batch?dry_run=1' : '/api/docs/generate-batch';
@@ -955,6 +975,7 @@ const res = await fetch(url, {
 const json = await res.json();
 
     docsOutEl.textContent = JSON.stringify(json, null, 2);
+    renderDocsLinks(json);
     if (!res.ok) setStatus(docsStatusEl, json.message || 'Error', 'error');
     else setStatus(docsStatusEl, 'OK', 'ok');
   } catch (err) {
