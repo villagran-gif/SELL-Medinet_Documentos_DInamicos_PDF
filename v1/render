@@ -1,0 +1,85 @@
+import { google } from "googleapis";
+
+/**
+ * Inserta/asegura header gris con: DEAL.<id> <email>
+ * documentId: Google Doc ID recién copiado
+ */
+export async function ensureDealAgentHeader({ authClient, documentId, dealId, agentEmail }) {
+  const docs = google.docs({ version: "v1", auth: authClient });
+
+  const headerText = `DEAL.${dealId} ${agentEmail}\n`; // newline para que quede “línea” en el header
+
+  // 1) Obtener header existente (si hay)
+  const getRes = await docs.documents.get({
+    documentId,
+    fields: "headers,documentStyle",
+  });
+
+  const headersMap = getRes.data.headers || {};
+  let headerId =
+    getRes.data.documentStyle?.defaultHeaderId ||
+    Object.keys(headersMap)[0] ||
+    null;
+
+  // 2) Si no existe, crearlo
+  if (!headerId) {
+    const createRes = await docs.documents.batchUpdate({
+      documentId,
+      requestBody: {
+        requests: [
+          {
+            createHeader: {
+              type: "DEFAULT",
+              sectionBreakLocation: { index: 0 },
+            },
+          },
+        ],
+      },
+    });
+
+    headerId = createRes.data.replies?.[0]?.createHeader?.headerId;
+    if (!headerId) throw new Error("No se pudo crear header (headerId vacío).");
+  }
+
+  // 3) Insertar texto en el header
+  // Nota: Docs exige Location con segmentId e index (0-based). :contentReference[oaicite:3]{index=3}
+  // En algunos docs el index 0 puede fallar; si falla, probamos index 1.
+  const insertAt = async (index) =>
+    docs.documents.batchUpdate({
+      documentId,
+      requestBody: {
+        requests: [
+          {
+            insertText: {
+              location: { segmentId: headerId, index },
+              text: headerText,
+            },
+          },
+          {
+            updateTextStyle: {
+              range: {
+                segmentId: headerId,
+                startIndex: index,
+                endIndex: index + headerText.length,
+              },
+              textStyle: {
+                fontSize: { magnitude: 9, unit: "PT" },
+                foregroundColor: {
+                  color: { rgbColor: { red: 0.6, green: 0.6, blue: 0.6 } },
+                },
+              },
+              fields: "fontSize,foregroundColor",
+            },
+          },
+        ],
+      },
+    });
+
+  try {
+    await insertAt(0);
+  } catch (e) {
+    await insertAt(1);
+  }
+
+  return { headerId };
+}
