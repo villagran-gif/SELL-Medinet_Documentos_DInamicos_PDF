@@ -1,0 +1,8 @@
+{
+  "app": {
+    "name": "Generar Exámenes | Drive",
+    "short_description": "Genera documentos de exámenes y gestiona Drive desde el Deal.",
+    "long_description": "App privada para Zendesk Sell en deal_card: asegura carpeta Drive, genera documentos desde plantillas y crea nota en Sell con links.",
+    "installation_instructions": "Configura backend_api_key (secure), drive_root_folder_id y opcionalmente backend_base_url / drive_shared_drive_id."
+  }
+}

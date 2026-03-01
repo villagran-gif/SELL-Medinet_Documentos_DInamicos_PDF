@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Generar Exámenes</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://static.zdassets.com/zendesk_app_framework_sdk/2.0/zaf_sdk.min.js"></script>
+  </head>
+  <body>
+    <main class="card">
+      <h1>Generar Exámenes</h1>
+
+      <div class="grid2">
+        <button id="btnEnsureFolder" type="button">Crear Drive Carpeta (crear si no existe)</button>
+        <button id="btnOpenFolder" type="button" class="secondary" disabled>Abrir</button>
+      </div>
+
+      <div class="grid2" style="margin-top:10px;">
+        <select id="templateSelect" class="select" disabled>
+          <option value="">(Cargando plantillas...)</option>
+        </select>
+        <button id="btnGenerate" type="button" class="secondary" disabled>Generar</button>
+      </div>
+
+      <button id="btnCreateNote" type="button" class="secondary" style="margin-top:10px;" disabled>
+        Crear nota en Sell
+      </button>
+
+      <p id="status" class="status">Listo ✅</p>
+      <p id="pdfResult" class="status" style="display:none;">PDF: <a id="pdfLink" href="#" target="_blank" rel="noopener noreferrer">Abrir PDF</a></p>
+
+      <details id="debugDetails">
+        <summary>Debug</summary>
+        <pre id="debug">(sin eventos)</pre>
+      </details>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
