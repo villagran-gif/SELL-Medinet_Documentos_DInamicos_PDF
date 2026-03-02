@@ -56,6 +56,18 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/health', (_req, res) => res.status(200).send('ok'));
 
+// --- API KEY guard (para Widget) ---
+function requireApiKey(req, res, next) {
+  // Usa BACKEND_API_KEY en Render (recomendado)
+  const expected = String(process.env.BACKEND_API_KEY || process.env.RENDER_API_KEY || '').trim();
+  if (!expected) return next(); // si no hay key configurada, no bloquea (útil en dev)
+
+  const got = String(req.header('x-api-key') || '').trim();
+  if (got !== expected) {
+    return res.status(403).json({ ok: false, status: 403, error: 'INVALID_API_KEY' });
+  }
+  return next();
+}
 // Build URLs
 function deskContactUrl(id) {
   const base = (process.env.SELL_DESKTOP_BASE_URL || 'https://clinyco.zendesk.com/sales').replace(/\/$/, '');
