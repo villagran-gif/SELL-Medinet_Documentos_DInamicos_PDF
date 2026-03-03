@@ -714,6 +714,8 @@ const docsDryRunEl = $('docsDryRun');
 const docsStatusEl = $('docs_status');
 const docsOutEl = $('docs_out');
 const docsLinksEl = $('docs_links');
+const docsOwnerIdEl = $('docsOwnerId');
+const docsOwnerHelpEl = $('docsOwnerHelp');
 
 // Templates UI
 const docsTemplatesEl = $('docsTemplates');
@@ -732,7 +734,9 @@ function updateDocsButton() {
   const ok = __lastSearchJson && __lastSearchJson.ok === true;
   const dealId = __lastSearchJson?.deal?.id;
   __selectedDealId = dealId || null;
-  btnCreateDocs.disabled = !(ok && __selectedDealId);
+
+  const actorOk = !!String(docsOwnerIdEl?.value || '').trim();
+  btnCreateDocs.disabled = !(ok && __selectedDealId && actorOk);
 }
 
 let __templatesAll = [];
@@ -949,6 +953,17 @@ $('form').addEventListener('submit', async (e) => {
 btnCreateDocs.addEventListener('click', async () => {
   if (!__selectedDealId) return;
 
+  const ownerIdRaw = String(docsOwnerIdEl?.value || '').trim();
+  if (!ownerIdRaw) {
+    setStatus(docsStatusEl, 'Debes seleccionar un agente (obligatorio para consignar en notas).', 'error');
+    updateDocsButton();
+    return;
+  }
+  const ownerId = Number(ownerIdRaw);
+  const ownerMeta = (window.__ownersMeta && window.__ownersMeta[String(ownerIdRaw)]) ? window.__ownersMeta[String(ownerIdRaw)] : null;
+  const actorEmail = (ownerMeta && ownerMeta.email) ? ownerMeta.email : `id:${ownerIdRaw}`;
+  const actorName = (ownerMeta && ownerMeta.name) ? ownerMeta.name : null;
+
   const dry = !!docsDryRunEl.checked;
   setStatus(docsStatusEl, dry ? 'Preparando (dry-run)...' : 'Generando documentos...', 'info');
   docsOutEl.textContent = '';
@@ -969,6 +984,7 @@ const res = await fetch(url, {
   body: JSON.stringify({
     deal_id: __selectedDealId,
     templates: selectedTemplates.map(t => ({ file_id: t.id, name: t.name })),
+    actor: { id: ownerId, name: actorName, email: actorEmail },
   }),
 });
 
@@ -1565,7 +1581,41 @@ async function loadOwnersForDealForm() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', loadOwnersForDealForm);
+
+async function loadOwnersForDocsForm() {
+  const sel = document.getElementById('docsOwnerId');
+  const help = document.getElementById('docsOwnerHelp');
+  if (!sel) return;
+
+  sel.innerHTML = `<option value="">Cargando dueños...</option>`;
+  try {
+    const res = await fetch('/api/owners');
+    const json = await res.json();
+    if (!res.ok || !json.ok) throw new Error(json.error || 'Error cargando dueños');
+
+    const owners = json.owners || [];
+    window.__ownersMeta = {};
+    owners.forEach(o => { window.__ownersMeta[String(o.id)] = { name: o.name, email: o.email || null }; });
+
+    sel.innerHTML = `<option value="">Selecciona dueño...</option>` + owners
+      .map(o => `<option value="${o.id}">${escapeHtml(o.name)} (${o.id})</option>`)
+      .join('');
+
+    if (help) help.textContent = json.fallback ? 'Dueños cargados por fallback.' : '';
+  } catch (err) {
+    sel.innerHTML = `<option value="">No se pudieron cargar dueños</option>`;
+    if (help) help.textContent = err.message || String(err);
+    console.error(err);
+  }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadOwnersForDealForm();
+  loadOwnersForDocsForm();
+  const sel = document.getElementById('docsOwnerId');
+  if (sel) sel.addEventListener('change', updateDocsButton);
+});
 
 
 

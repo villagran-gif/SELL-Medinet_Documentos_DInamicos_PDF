@@ -1849,9 +1849,16 @@ if (!jobs.length) {
     const shouldNote = String(req.body?.create_note ?? 'true').toLowerCase() !== 'false';
     let note = null;
     if (!dryRun && shouldNote) {
-      const okPdfs = results.filter(r => r.status === 'done' && r.pdf_url);
+            const okPdfs = results.filter(r => r.status === 'done' && r.pdf_url);
+      const actorName = String(req.body?.actor?.name || '').trim();
+      const actorId = String(req.body?.actor?.id || '').trim();
+      const actorInfo = agentEmail
+        ? (actorName ? `${actorName} <${agentEmail}>` : agentEmail)
+        : (actorName ? `${actorName}${actorId ? ` (${actorId})` : ''}` : (actorId ? actorId : ''));
+
       const lines = [
         `📄 Documentos generados desde Portal`,
+        ...(actorInfo ? [`Agente consignado: ${actorInfo}`] : []),
         `Carpeta Drive: ${driveInfo.folder_url}`,
         ...okPdfs.map(r => `• ${r.doc_type}: ${r.pdf_url}`),
       ];

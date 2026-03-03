@@ -298,7 +298,17 @@
             <span>Dry-run</span>
           </label>
           <span class="muted small">Genera PDFs desde templates en Drive y los guarda en la carpeta del paciente.</span>
+        
+        <div class="row span2" style="margin-top:6px;">
+          <label style="width:100%;">
+            <b>Agente (obligatorio para consignar en notas)</b>
+            <select id="docsOwnerId">
+              <option value="">Selecciona dueño...</option>
+            </select>
+            <div id="docsOwnerHelp" class="muted small"></div>
+          </label>
         </div>
+</div>
 
         <details class="details" open id="docsTemplatesWrap" style="margin-top:8px;">
   <summary>Templates disponibles</summary>
