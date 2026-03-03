@@ -981,6 +981,102 @@ function setStatus(el, msg, kind = 'info') {
   el.className = `status ${kind}`;
 }
 
+
+// -------------------------
+// Inline RUT validation for Contact form (blur + preview)
+// -------------------------
+let __cRutLookupJson = null;
+let __cRutLookupRut = '';
+
+function setRutMsg(kind, text) {
+  if (!cRutMsg) return;
+  cRutMsg.className = 'rutmsg';
+  if (kind) cRutMsg.classList.add(kind);
+  cRutMsg.textContent = text || '';
+}
+
+function renderRutLookupPreview(json) {
+  if (!cRutLookup) return;
+  if (!json) { cRutLookup.innerHTML = ''; return; }
+
+  const parts = [];
+  const rutIn = json.rut_input || '';
+  const rutNorm = json.rut_normalized || '';
+  parts.push(`<div class="summary-row"><b>Resultado búsqueda RUN/RUT</b></div>`);
+  parts.push(`<div class="summary-row"><span class="muted">Ingresado:</span> <span class="mono">${escapeHtml(rutIn)}</span></div>`);
+  if (rutNorm) parts.push(`<div class="summary-row"><span class="muted">Normalizado:</span> <span class="mono">${escapeHtml(rutNorm)}</span></div>`);
+
+  const contacts = Array.isArray(json.contacts) ? json.contacts : [];
+  if (contacts.length) {
+    parts.push(`<div class="summary-row" style="margin-top:6px;"><b>Contacto existente</b></div>`);
+    for (const c of contacts) {
+      const name = c.display_name || ('Contacto ' + (c.id || ''));
+      const url = c.desktop_url || c.mobile_url || '#';
+      parts.push(`<div class="summary-row">• <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(name)}</a></div>`);
+    }
+  } else {
+    parts.push(`<div class="summary-row" style="margin-top:6px;"><b>Contacto:</b> No existe ✅✅</div>`);
+  }
+
+  const deals = Array.isArray(json.deals) ? json.deals : [];
+  if (deals.length) {
+    parts.push(`<div class="summary-row" style="margin-top:8px;"><b>Deals encontrados</b></div>`);
+    for (const d of deals) {
+      const title = d.name || ('Deal ' + (d.id || ''));
+      const meta = [d.pipeline_name, d.stage_name].filter(Boolean).join(' · ');
+      const url = d.desktop_url || d.mobile_url || '#';
+      parts.push(`<div class="summary-row">• <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(title)}</a>${meta ? ` <span class="muted">(${escapeHtml(meta)})</span>` : ''}</div>`);
+    }
+  }
+
+  cRutLookup.innerHTML = parts.join('');
+}
+
+async function runContactRutLookup({ render = false } = {}) {
+  const rutRaw = (fields.rut && fields.rut.value) ? String(fields.rut.value).trim() : '';
+  if (!rutRaw) {
+    __cRutLookupJson = null;
+    __cRutLookupRut = '';
+    setRutMsg('', '');
+    if (render) renderRutLookupPreview(null);
+    return null;
+  }
+
+  if (!render && __cRutLookupRut && __cRutLookupRut === rutRaw && __cRutLookupJson) {
+    return __cRutLookupJson;
+  }
+
+  try {
+    const res = await fetch('/api/search-rut', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rut: rutRaw }),
+    });
+    const json = await res.json();
+
+    __cRutLookupJson = json;
+    __cRutLookupRut = rutRaw;
+
+    const status = Number(json && json.status) || (res.ok ? 200 : res.status);
+    if (status === 400 || String(json.error || '').includes('INVALID_RUT') || String(json.error || '').includes('MISSING_RUT')) {
+      setRutMsg('err', 'Rut formato inválido ‼️❌');
+    } else if (Number(json.contacts_found || 0) > 0) {
+      setRutMsg('warn', 'Rut ya posee contacto no 🚨😩');
+    } else if (json.ok === true) {
+      setRutMsg('ok', 'Rut no existe, formato OK. ✅✅');
+    } else {
+      setRutMsg('err', String(json.message || json.error || 'Error'));
+    }
+
+    if (render) renderRutLookupPreview(json);
+    return json;
+  } catch (_e) {
+    setRutMsg('err', 'Error consultando RUT (network).');
+    if (render) renderRutLookupPreview(null);
+    return null;
+  }
+}
+
 $('form').addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -1108,6 +1204,9 @@ const cStatus = $('c_status');
 const cSummary = $('c_summary');
 const cOut = $('c_out');
 const cDetails = $('c_details');
+const cRutMsg = $('c_rut_msg');
+const cRutLookup = $('c_rut_lookup');
+
 
 const fields = {
   rut: $('c_rut'),
@@ -1290,8 +1389,11 @@ function renderSummary(json) {
 
 async function callCreateContact(dryRun) {
   const body = collectContactData();
-  const debug = techMode.checked ? '&debug=1' : '';
-  const url = dryRun ? `/api/create-contact?dry_run=1${debug}` : `/api/create-contact${debug}`;
+  const params = new URLSearchParams();
+  if (dryRun) params.set('dry_run', '1');
+  if (techMode.checked) params.set('debug', '1');
+  const qs = params.toString();
+  const url = `/api/create-contact${qs ? `?${qs}` : ''}`;
 
   setStatus(cStatus, dryRun ? 'Generando vista previa...' : 'Creando contacto...', 'info');
   cOut.textContent = '';
@@ -1345,8 +1447,11 @@ async function callCreateDeal(dryRun, contactId) {
     return;
   }
 
-  const debug = techMode.checked ? '&debug=1' : '';
-  const url = dryRun ? `/api/create-deal?dry_run=1${debug}` : `/api/create-deal${debug}`;
+  const params = new URLSearchParams();
+  if (dryRun) params.set('dry_run', '1');
+  if (techMode.checked) params.set('debug', '1');
+  const qs = params.toString();
+  const url = `/api/create-deal${qs ? `?${qs}` : ''}`;
 
   setStatus(cStatus, dryRun ? 'Generando vista previa de Deal...' : 'Creando Deal...', 'info');
 
@@ -1402,8 +1507,17 @@ async function callCreateDeal(dryRun, contactId) {
   }
 }
 
-$('btnPreview').addEventListener('click', () => callCreateContact(true));
+$('btnPreview').addEventListener('click', async () => {
+  await runContactRutLookup({ render: true });
+  await callCreateContact(true);
+});
 $('btnCreate').addEventListener('click', () => callCreateContact(false));
+
+// Auto-check RUT when leaving the field (Tab/click)
+if (fields.rut) {
+  fields.rut.addEventListener('blur', () => runContactRutLookup({ render: false }));
+}
+
 
 
 // -------------------------

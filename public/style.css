@@ -182,3 +182,14 @@ textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); bor
   margin-top: 6px;
   font-size: 0.95rem;
 }
+
+
+/* RUT inline validation message */
+.rutmsg{
+  margin-top: 6px;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+.rutmsg.ok{ color: #198754; }
+.rutmsg.err{ color: #dc3545; }
+.rutmsg.warn{ color: #fd7e14; }

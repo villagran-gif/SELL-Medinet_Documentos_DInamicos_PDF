@@ -52,7 +52,9 @@
           <label>
             RUN / RUT <span class="req">*</span>
             <input id="c_rut" placeholder='Ej: 12.345.678-K' autocomplete="off" />
-          </label>
+          
+            <div id="c_rut_msg" class="rutmsg"></div>
+</label>
 
           <label>
             Nombres <span class="req">*</span>
@@ -117,6 +119,9 @@
             <span class="muted small">En DEV, crear puede estar bloqueado por <span class="mono">ALLOW_WRITE</span>.</span>
           </div>
         </form>
+
+        
+        <div id="c_rut_lookup" class="summary"></div>
 
         <section id="c_status" class="status"></section>
         <div id="c_summary" class="summary"></div>
