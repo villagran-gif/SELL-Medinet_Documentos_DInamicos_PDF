@@ -977,7 +977,21 @@ function renderDocsLinks(json) {
 }
 
 function setStatus(el, msg, kind = 'info') {
-  el.textContent = msg || '';
+  if (!el) return;
+  const safe = String(msg || '').trim();
+
+  // Default: plain text
+  let html = escapeHtml(safe);
+
+  if (kind === 'running') {
+    html = `<span class="status-icon orange blink">🚨</span><span class="status-text">${escapeHtml(safe)}</span><span class="status-icon orange blink">🚨</span>`;
+  } else if (kind === 'ok') {
+    html = `<span class="status-icon green">✔️</span><span class="status-text">${escapeHtml(safe)}</span><span class="status-icon green">✔️</span>`;
+  } else if (kind === 'error') {
+    html = `<span class="status-icon red">😖</span><span class="status-text">${escapeHtml(safe)}</span><span class="status-icon red">😩</span>`;
+  }
+
+  el.innerHTML = html;
   el.className = `status ${kind}`;
 }
 
@@ -1129,7 +1143,7 @@ btnCreateDocs.addEventListener('click', async () => {
   const actorName = (ownerMeta && ownerMeta.name) ? ownerMeta.name : null;
 
   const dry = !!docsDryRunEl.checked;
-  setStatus(docsStatusEl, dry ? 'Preparando (dry-run)...' : 'Generando documentos...', 'info');
+  setStatus(docsStatusEl, dry ? 'Preparando vista previa...' : 'Generando documentos...', 'running');
   docsOutEl.textContent = '';
   if (docsLinksEl) docsLinksEl.innerHTML = '';
 
@@ -1156,8 +1170,12 @@ const json = await res.json();
 
     docsOutEl.textContent = JSON.stringify(json, null, 2);
     renderDocsLinks(json);
-    if (!res.ok) setStatus(docsStatusEl, json.message || 'Error', 'error');
-    else setStatus(docsStatusEl, 'OK', 'ok');
+    if (!res.ok) {
+      setStatus(docsStatusEl, json.message || 'Error', 'error');
+    } else {
+      if (dry) setStatus(docsStatusEl, 'Vista Previa OK… confirma “CREAR DOCUMENTOS”', 'ok');
+      else setStatus(docsStatusEl, 'Documentos generados ✅', 'ok');
+    }
   } catch (err) {
     setStatus(docsStatusEl, err.message || String(err), 'error');
   }
@@ -1170,7 +1188,7 @@ const json = await res.json();
     const dealId = qs.get('deal_id') || qs.get('dealId');
     if (!dealId) return;
 
-    setStatus(statusEl, `Cargando deal_id=${dealId}...`, 'info');
+    setStatus(statusEl, `Cargando deal_id=${dealId}...`, 'running');
     fetch(`/api/deal-context?deal_id=${encodeURIComponent(dealId)}`)
       .then(r => r.json().then(j => ({ ok: r.ok, j })))
       .then(({ ok, j }) => {
@@ -1395,7 +1413,7 @@ async function callCreateContact(dryRun) {
   const qs = params.toString();
   const url = `/api/create-contact${qs ? `?${qs}` : ''}`;
 
-  setStatus(cStatus, dryRun ? 'Generando vista previa...' : 'Creando contacto...', 'info');
+  setStatus(cStatus, dryRun ? 'Generando vista previa...' : 'Creando contacto...', 'running');
   cOut.textContent = '';
   cSummary.innerHTML = '';
 
@@ -1416,7 +1434,17 @@ async function callCreateContact(dryRun) {
     }
 
 
-    setStatus(cStatus, json.message || (res.ok ? 'OK' : 'Error'), res.ok ? 'ok' : 'error');
+    // Mensajes amigables en modo normal
+    if (res.ok) {
+      if (dryRun) {
+        setStatus(cStatus, 'Vista Previa OK… confirma “CREAR CONTACTO”', 'ok');
+      } else {
+        setStatus(cStatus, json.message || 'Contacto creado ✅', 'ok');
+      }
+    } else {
+      setStatus(cStatus, (json && json.message) ? json.message : 'Error', 'error');
+    }
+
     renderSummary(json);
 
     // Guardar último contact_id para creación de Deal/Trato
@@ -1652,7 +1680,7 @@ if (!ownerId || !Number.isFinite(ownerId)) {
   const debug = (typeof techMode !== 'undefined' && techMode.checked) ? '&debug=1' : '';
   const url = dryRun ? `/api/create-deal?dry_run=1${debug}` : `/api/create-deal${debug}`;
 
-  setStatus(dStatus, dryRun ? 'Generando vista previa de Deal...' : 'Creando Deal/TRATO...', 'info');
+  setStatus(dStatus, dryRun ? 'Generando vista previa de Deal...' : 'Creando Deal/TRATO...', 'running');
 
   try {
     const res = await fetch(url, {
