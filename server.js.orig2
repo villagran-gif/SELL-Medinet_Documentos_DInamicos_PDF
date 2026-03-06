@@ -100,16 +100,6 @@ function normKey(s) {
     .trim();
 }
 
-function normalizeAseguradoraAlias(v) {
-  const key = normKey(v);
-  const map = {
-    'ISAPRE CRUZBLANCA': 'CRUZ BLANCA',
-    'ISAPRE CRUZ BLANCA': 'CRUZ BLANCA',
-    'CRUZBLANCA': 'CRUZ BLANCA',
-  };
-  return map[key] || cleanValue(v);
-}
-
 async function getContactCatalog(force = false) {
   const now = Date.now();
   if (!force && CONTACT_CATALOG && (now - CONTACT_CATALOG_AT) < CATALOG_TTL_MS) return CONTACT_CATALOG;
@@ -699,7 +689,7 @@ app.post('/api/create-contact', async (req, res) => {
     const telefono1 = cleanValue(body.telefono1 || body.telefono_1 || body['Teléfono 1'] || body['Telefono 1'] || body.phone1);
     const telefono2 = cleanValue(body.telefono2 || body.telefono_2 || body['Teléfono 2'] || body['Telefono 2'] || body.phone2) || telefono1;
     const email = cleanValue(body.email || body.correo || body['Correo electrónico'] || body['Correo electronico']);
-    const aseguradoraRaw = normalizeAseguradoraAlias(body.aseguradora || body.prevision || body['Aseguradora'] || body['Previsión'] || body['Prevision']);
+    const aseguradoraRaw = cleanValue(body.aseguradora || body.prevision || body['Aseguradora'] || body['Previsión'] || body['Prevision']);
     const modalidad = cleanValue(body.modalidad || body['Modalidad']);
     const direccion = cleanValue(body.direccion || body['Dirección'] || body['Direccion']);
     const comunaInput = cleanValue(body.comuna || body['Comuna']);
@@ -950,7 +940,7 @@ app.post('/api/create-deal', async (req, res) => {
     const rutInput = cleanValue(body.rut || body.run || body.RUN || body.rut_o_id || body.rut_humano);
     const nombres = cleanValue(body.nombres || body.Nombres);
     const apellidos = cleanValue(body.apellidos || body.Apellidos);
-    const aseguradoraRaw = normalizeAseguradoraAlias(body.aseguradora || body.prevision || body['Aseguradora'] || body['Previsión'] || body['Prevision']);
+    const aseguradoraRaw = cleanValue(body.aseguradora || body.prevision || body['Aseguradora'] || body['Previsión'] || body['Prevision']);
     const modalidadRaw = cleanValue(body.modalidad || body['Modalidad'] || body['Tramo/Modalidad'] || body.tramo_modalidad);
     const comunaInput = cleanValue(body.comuna || body['Comuna']);
     const comuna = canonicalComuna(comunaInput);

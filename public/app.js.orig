@@ -585,14 +585,6 @@ const COMUNAS_OPTIONS = [
 function normalizePrevision(s) {
   let t = normKey(s);
   t = t.replace(/\s+/g, ' ').trim();
-
-  const aliasMap = {
-    'ISAPRE CRUZBLANCA': 'CRUZ BLANCA',
-    'ISAPRE CRUZ BLANCA': 'CRUZ BLANCA',
-    'CRUZBLANCA': 'CRUZ BLANCA',
-  };
-  t = aliasMap[t] || t;
-
   // If includes "FONASA", keep only FONASA (tramo goes elsewhere)
   if (t.includes('FONASA')) return 'FONASA';
   // If includes any known choice as substring, pick it
@@ -1229,9 +1221,6 @@ function normalizeModalidad(v) {
     "más vida": "Más Vida",
     "vida tres": "Vida Tres",
     "cruz blanca": "Cruz Blanca",
-    "isapre cruzblanca": "Cruz Blanca",
-    "isapre cruz blanca": "Cruz Blanca",
-    "cruzblanca": "Cruz Blanca",
     "cruz norte": "Cruz Norte",
     "cruz del norte": "Cruz Norte",
     "colmena": "Colmena",
