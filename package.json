@@ -1,17 +1,16 @@
 {
-  "name": "portal-rut-search",
-  "version": "2.26.0",
-  "private": true,
-  "type": "commonjs",
+  "name": "sell-medinet-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "type": "module",
   "engines": {
-    "node": "22.x"
+    "node": ">=18"
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node --watch server.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "googleapis": "^131.0.0"
+    "express": "^4.19.2"
   }
 }
