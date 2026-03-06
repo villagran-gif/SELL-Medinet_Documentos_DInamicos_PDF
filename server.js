@@ -960,7 +960,6 @@ const numFamiliaPaciente = cleanValue(body.numero_familia_paciente || body['Nume
 const cirujanoBariatrico = cleanValue(body.cirujano_bariatrico || body['CIRUJANO BARIÁTRICO'] || body['CIRUJANO BARIATRICO']);
 const cirujanoPlastico = cleanValue(body.cirujano_plastico || body['CIRUJANO PLASTICO']);
 const cirujanoBalon = cleanValue(body.cirujano_balon || body['CIRUJANO DE BALON']);
-const cirujanoGeneral = cleanValue(body.cirujano_general || body['CIRUJANO GENERAL']);
 
     if (!Number.isFinite(contactId) || contactId <= 0) return out(400, 'MISSING_CONTACT_ID', 'Falta contact_id para asociar el Deal.');
     if (!Number.isFinite(ownerId) || ownerId <= 0) return out(400, 'MISSING_OWNER_ID', 'Debes seleccionar un Dueño para el Deal.');
@@ -1013,7 +1012,6 @@ const DF_NUM_FAMILIA = findDealFieldNameByNorm(dcat, [normKey('Numero familia pa
 const DF_CIR_BARI = findDealFieldNameByNorm(dcat, [normKey('CIRUJANO BARIÁTRICO'), normKey('CIRUJANO BARIATRICO')]);
 const DF_CIR_PLAST = findDealFieldNameByNorm(dcat, [normKey('CIRUJANO PLASTICO')]);
 const DF_CIR_BALON = findDealFieldNameByNorm(dcat, [normKey('CIRUJANO DE BALON')]);
-const DF_CIR_GENERAL = findDealFieldNameByNorm(dcat, [normKey('CIRUJANO GENERAL')]);
 
 
     // Match previsión choice
@@ -1027,11 +1025,8 @@ const DF_CIR_GENERAL = findDealFieldNameByNorm(dcat, [normKey('CIRUJANO GENERAL'
     }
 
     const pesoNum = parseNumDot(pesoRaw);
-    const estParsed = parseNumDot(estaturaRaw);
-    const estaturaCm = Number.isFinite(estParsed) ? (estParsed > 3 ? estParsed : estParsed * 100) : null;
-    const estaturaM = Number.isFinite(estaturaCm) ? estaturaCm / 100 : null;
-    const estaturaSell = Number.isFinite(estaturaCm) ? String(Math.round(estaturaCm)) : null;
-    const imcCalc = calcImc(pesoNum, estaturaM);
+    const estaturaNum = parseNumDot(estaturaRaw);
+    const imcCalc = calcImc(pesoNum, estaturaNum);
     const imcStr = (imcCalc === null) ? null : imcCalc.toFixed(2);
     const imcClasif = (imcCalc === null) ? null : classifyImc(imcCalc);
     const edadCalc = calcEdadFromDDMMYYYY(cleanValue(body.fecha_nacimiento || body.fechaNacimiento || body['Fecha Nacimiento'] || body['Fecha Nacimiento']));
@@ -1051,7 +1046,7 @@ if (DF_TELEFONO) custom_fields[DF_TELEFONO] = cleanValue(body.telefono1 || body.
 if (DF_FECHA_NAC && body.fecha_nacimiento) custom_fields[DF_FECHA_NAC] = cleanValue(body.fecha_nacimiento);
 if (DF_CIUDAD && comuna) custom_fields[DF_CIUDAD] = comuna;
 
-if (DF_ESTATURA && estaturaSell) custom_fields[DF_ESTATURA] = estaturaSell;
+if (DF_ESTATURA && estaturaRaw) custom_fields[DF_ESTATURA] = estaturaRaw;
 if (DF_PESO && pesoRaw) custom_fields[DF_PESO] = pesoRaw;
 if (DF_IMC && imcStr) custom_fields[DF_IMC] = imcStr;
 if (DF_EDAD && edadStr) custom_fields[DF_EDAD] = edadStr;
@@ -1074,7 +1069,6 @@ if (DF_NUM_FAMILIA && numFamiliaPaciente) custom_fields[DF_NUM_FAMILIA] = numFam
 if (DF_CIR_BARI && cirujanoBariatrico) custom_fields[DF_CIR_BARI] = cirujanoBariatrico;
 if (DF_CIR_PLAST && cirujanoPlastico) custom_fields[DF_CIR_PLAST] = cirujanoPlastico;
 if (DF_CIR_BALON && cirujanoBalon) custom_fields[DF_CIR_BALON] = cirujanoBalon;
-if (DF_CIR_GENERAL && cirujanoGeneral) custom_fields[DF_CIR_GENERAL] = cirujanoGeneral;
 
 // Sucursal: fixed list; stored as string
 if (DF_SUCURSAL && sucursal) custom_fields[DF_SUCURSAL] = sucursal;
@@ -1093,7 +1087,7 @@ const vista_previa = {
       modalidad: modalidadRaw || null,
       comuna: comuna || ERROR_COMUNA,
       custom_fields,
-      estatura: estaturaSell || estaturaRaw || null,
+      estatura: estaturaRaw || null,
       peso: pesoRaw || null,
       edad: edadStr,
       imc: imcStr,
@@ -1112,7 +1106,6 @@ const vista_previa = {
       cirujano_bariatrico: cirujanoBariatrico || null,
       cirujano_plastico: cirujanoPlastico || null,
       cirujano_balon: cirujanoBalon || null,
-      cirujano_general: cirujanoGeneral || null,
 
     };
 

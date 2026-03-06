@@ -292,7 +292,14 @@
       ])
     ]);
 
-    wrap.appendChild(card);
+    const dealForm = $("dealForm") || wrap.querySelector("#dealForm");
+    const dealCard = getClosestCard(dealForm);
+
+    if (dealCard && dealCard.parentNode) {
+      insertAfter(dealCard, card);
+    } else {
+      wrap.appendChild(card);
+    }
 
     const tmDealId = $("tmDealId");
     const btnLoad = $("btnTmLoad");
